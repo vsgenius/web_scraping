@@ -17,18 +17,24 @@ HEADERS = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,imag
 'Sec-Fetch-User': '?1',
 'Upgrade-Insecure-Requests': '1',
 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 YaBrowser/22.1.0.2500 Yowser/2.5 Safari/537.36'}
-KEYWORDS = set(['дизайн', 'фото', 'web', 'python','Sberfight','ребенка'])
+KEYWORDS = set(['дизайн', 'фото', 'web', 'python'])
 response = requests.get('https://habr.com/ru/all/',headers=HEADERS)
 response.raise_for_status()
 text = response.text
 soup = bs4.BeautifulSoup(text, features='html.parser')
 articles = soup.find_all('article')
 for article in articles:
-    hubs = article.find_all('a', class_="tm-article-snippet__hubs-item-link")
-    tags = [hub.find('span').text for hub in hubs]
     title = article.find('a', class_="tm-article-snippet__title-link")
+    url = 'https://habr.com' + title.attrs['href']
+    response = requests.get(url, headers=HEADERS)
+    response.raise_for_status()
+    text = response.text
+    soup = bs4.BeautifulSoup(text, features='html.parser')
+    articles_news = soup.find_all('article')
+    hubs = articles_news[0].find_all('a', class_="tm-article-snippet__hubs-item-link")
+    tags = [hub.find('span').text for hub in hubs]
     if (KEYWORDS & set(tags) or KEYWORDS & set(map(str.lower,tags))) or \
-            KEYWORDS & set(title.find('span').text.split()) or KEYWORDS & set(article.text.split()):
-        date = article.find('time').attrs['title']
-        href = 'https://habr.com' + title.attrs['href']
+            KEYWORDS & set(title.find('span').text.split()) or KEYWORDS & set(articles_news[0].text.split()):
+        date = articles_news[0].find('time').attrs['title']
+        href = url
         print(date, title.find('span').text, href)
